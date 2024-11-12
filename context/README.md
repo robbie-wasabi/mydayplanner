@@ -1,0 +1,1 @@
+a collection of notes, code snippets, and other context for the project

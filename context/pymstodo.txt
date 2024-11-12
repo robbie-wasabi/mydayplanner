@@ -1,0 +1,343 @@
+pymstodo documentation
+
+Basic Pymstodo exception
+
+Source code in pymstodo/client.py
+Task dataclass
+To-Do task represents a task, such as a piece of work or personal item, that can be tracked and completed
+
+Source code in pymstodo/client.py
+body_text: str | None property
+The task body that typically contains information about the task
+
+categories: list[str] instance-attribute
+The categories associated with the task
+
+completedDateTime: _DateTimeTimeZone instance-attribute
+The date and time in the specified time zone that the task was finished. Uses ISO 8601 format
+
+completed_date: datetime | None property
+The date and time in the specified time zone that the task was finished
+
+createdDateTime: str instance-attribute
+The date and time when the task was created. It is in UTC and uses ISO 8601 format
+
+created_date: datetime | None property
+The date and time when the task was created. It is in UTC
+
+dueDateTime: _DateTimeTimeZone instance-attribute
+The date and time in the specified time zone that the task is to be finished. Uses ISO 8601 format
+
+due_date: datetime | None property
+The date and time in the specified time zone that the task is to be finished
+
+hasAttachments: bool instance-attribute
+Indicates whether the task has attachments
+
+importance: Literal['low', 'normal', 'high'] instance-attribute
+The importance of the task. Possible values are: low, normal, high
+
+isReminderOn: bool instance-attribute
+Set to true if an alert is set to remind the user of the task
+
+lastModifiedDateTime: str instance-attribute
+The date and time when the task was last modified. It is in UTC and uses ISO 8601 format
+
+last_mod_date: datetime | None property
+The date and time when the task was last modified. It is in UTC
+
+reminderDateTime: _DateTimeTimeZone instance-attribute
+The date and time in the specified time zone for a reminder alert of the task to occur. Uses ISO 8601 format
+
+reminder_date: datetime | None property
+The date and time in the specified time zone for a reminder alert of the task to occur
+
+startDateTime: _DateTimeTimeZone instance-attribute
+The date and time in the specified time zone at which the task is scheduled to start. Uses ISO 8601 format
+
+start_date: datetime | None property
+The date and time in the specified time zone at which the task is scheduled to start
+
+task_id: str instance-attribute
+Unique identifier for the task. By default, this value changes when the item is moved from one list to another
+
+task_status: TaskStatus property
+Indicates the state or progress of the task
+
+title: str instance-attribute
+A brief description of the task
+
+TaskList dataclass
+To-Do task list contains one or more task
+
+Source code in pymstodo/client.py
+displayName: str instance-attribute
+The name of the task list
+
+isOwner: bool instance-attribute
+True if the user is owner of the given task list
+
+isShared: bool instance-attribute
+True if the task list is shared with other users
+
+link: str property
+Link to the task list on web.
+
+list_id: str instance-attribute
+The identifier of the task list, unique in the user's mailbox. Read-only
+
+wellknown_list_name: WellknownListName | None property
+Property indicating the list name if the given list is a well-known list
+
+TaskStatus
+Bases: Enum
+
+The state or progress of the task
+
+Attributes:
+
+Name	Type	Description
+notStarted		not started
+inProgress		in progress
+completed		completed
+waitingOnOthers		waiting on others
+deferred		deferred
+Source code in pymstodo/client.py
+TaskStatusFilter
+Bases: Enum
+
+Tasks status filter
+
+Attributes:
+
+Name	Type	Description
+completed		only completed tasks
+notCompleted		only non-completed tasks
+all		all tasks
+Source code in pymstodo/client.py
+ToDoConnection
+To-Do connection is your entry point to the To-Do API
+
+Parameters:
+
+Name	Type	Description	Default
+client_id	str	API client ID	required
+client_secret	str	API client secret	required
+token	Token	Token obtained by method get_token	required
+Source code in pymstodo/client.py
+complete_task(task_id, list_id)
+Complete a task
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	Unique identifier for the task	required
+list_id	str	Unique identifier for the task list	required
+Returns:
+
+Type	Description
+Task	A completed task
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+create_list(name)
+Create a new task list
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	Title of the new task list	required
+Returns:
+
+Type	Description
+TaskList	A created task list
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+create_task(title, list_id, due_date=None, body_text=None)
+Create a new task in a specified task list
+
+Parameters:
+
+Name	Type	Description	Default
+title	str	A brief description of the task	required
+list_id	str	Unique identifier for the task list	required
+due_date	datetime | None	The date and time that the task is to be finished	None
+body_text	str | None	Information about the task	None
+Returns:
+
+Type	Description
+Task	A created task
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+delete_list(list_id)
+Delete a task list
+
+Parameters:
+
+Name	Type	Description	Default
+list_id	str	Unique identifier for the task list	required
+Returns:
+
+Type	Description
+bool	True if success
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+delete_task(task_id, list_id)
+Delete a task
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	Unique identifier for the task	required
+list_id	str	Unique identifier for the task list	required
+Returns:
+
+Type	Description
+bool	True if success
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+get_auth_url(client_id) staticmethod
+Get the authorization_url
+
+Parameters:
+
+Name	Type	Description	Default
+client_id	str	API client ID	required
+Returns:
+
+Type	Description
+Any	Authorization URL to show to the user
+Source code in pymstodo/client.py
+get_list(list_id)
+Read the properties of a task list
+
+Parameters:
+
+Name	Type	Description	Default
+list_id	str	Unique identifier for the task list	required
+Returns:
+
+Type	Description
+TaskList	A task list object
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+get_lists(limit=99)
+Get a list of the task lists
+
+Parameters:
+
+Name	Type	Description	Default
+limit	int | None	The limit size of the response	99
+Returns:
+
+Type	Description
+list[TaskList]	A list of the task lists
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+get_task(task_id, list_id)
+Read the properties of a task
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	Unique identifier for the task	required
+list_id	str	Unique identifier for the task list	required
+Returns:
+
+Type	Description
+Task	A task object
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+get_tasks(list_id, limit=1000, status=TaskStatusFilter.NOT_COMPLETED)
+Get tasks by a specified task list
+
+Parameters:
+
+Name	Type	Description	Default
+list_id	str	Unique identifier for the task list	required
+limit	int | None	The limit size of the response	1000
+status	TaskStatusFilter | None	The state or progress of the task	TaskStatusFilter.NOT_COMPLETED
+Returns:
+
+Type	Description
+list[Task]	Tasks of a specified task list
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+get_token(client_id, client_secret, redirect_resp) staticmethod
+Fetch the access token
+
+Source code in pymstodo/client.py
+update_list(list_id, **list_data)
+Update the properties of a task list
+
+Parameters:
+
+Name	Type	Description	Default
+list_id	str	Unique identifier for the task list	required
+list_data	str | bool	Task properties from TaskList object	{}
+Returns:
+
+Type	Description
+TaskList	An updated task list.
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+update_task(task_id, list_id, **task_data)
+Update the properties of a task
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	Unique identifier for the task	required
+list_id	str	Unique identifier for the task list	required
+task_data	str | int | bool	Task properties from Task object	{}
+Returns:
+
+Type	Description
+Task	An updated task
+Raises:
+
+Type	Description
+PymstodoError	An error occurred accessing the API
+Source code in pymstodo/client.py
+WellknownListName
+Bases: Enum
+
+Well-known list name
+
+Attributes:
+
+Name	Type	Description
+DEFAULT_LIST		Default list
+FLAGGED_EMAILS		Flagged emails
+UNKNOWN_FUTURE_VALUE		Unknown future value
+Source code in pymstodo/client.py
+Made with Material for MkDocs
