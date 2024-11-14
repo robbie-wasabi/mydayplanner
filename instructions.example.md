@@ -14,7 +14,15 @@ Always use your best judgement when deciding what to include:
 - work is generally time sensitive and higher priority than personal tasks but there are certainly exceptions
 - stores hours are generally 9am-7pm
 
+Always use your best judgement when estimating the length of time a task will take:
+- phone calls ~15 min
+- meetings ~1 hr
+- taking out the trash ~5 min
+- purchasing items online ~5 min
+
 Often the "task" might just be a word or a phrase; if so, it's probably just a reminder so you should ignore it.
+
+Only include tasks that occur on the given weekday/day/date.
 
 ## About the User
 
@@ -56,6 +64,8 @@ Lists are categories of tasks:
 ### Personal
 - not work related
 - generally not time sensitive
+- group tasks together if they are related
+- group quick & easy tasks together: dishes, laundry, purchases, phone calls, etc...
 - ...
 
 ### Work

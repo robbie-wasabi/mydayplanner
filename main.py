@@ -1,4 +1,5 @@
 from datetime import datetime
+import hashlib
 from pymstodo import ToDoConnection
 import dotenv
 import os
@@ -8,12 +9,13 @@ from typing import Optional
 import json
 import os
 from anthropic import Anthropic
+from appdirs import user_cache_dir
+
+model = "claude-3-5-sonnet-20241022"
 
 
-def setup() -> None:
+def setup(client_id, client_secret) -> None:
     """Initial setup and token storage"""
-    client_id = os.getenv("MYDAYPLANNER_CLIENT")
-    client_secret = os.getenv("MYDAYPLANNER_SECRET")
 
     auth_url = ToDoConnection.get_auth_url(client_id)
     redirect_resp = input(
@@ -25,11 +27,9 @@ def setup() -> None:
     print("Setup complete! Token saved.")
 
 
-def mtdo_client() -> Optional[ToDoConnection]:
+def mtdo_client(client_id, client_secret) -> Optional[ToDoConnection]:
     """Get authenticated client or None if setup needed"""
     dotenv.load_dotenv()
-    client_id = os.getenv("MYDAYPLANNER_CLIENT")
-    client_secret = os.getenv("MYDAYPLANNER_SECRET")
     token_str = keyring.get_password("mydayplanner", "microsoft_todo_token")
 
     if not all([client_id, client_secret, token_str]):
@@ -53,9 +53,7 @@ def fetch_tasks_from_lists(client, lists):
     return all_tasks
 
 
-def schedule(tasks, start_time, end_time):
-    with open("instructions.md", "r") as f:
-        instructions = f.read()
+def schedule(tasks, prev_schedule, instructions, date, start_time, end_time):
 
     anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -66,11 +64,20 @@ def schedule(tasks, start_time, end_time):
         And these tasks:
         {json.dumps(tasks, indent=2)}
 
+        {f"And today's date: {date.strftime('%Y-%m-%d')}" if date else ""}
+        {f"And today's weekday: {date.strftime('%A')}" if date else ""}
+
         {f"And this start time: {start_time}" if start_time else ""}
         {f"And this end time: {end_time}" if end_time else ""}
 
+        And this previous schedule:
+        {json.dumps(prev_schedule, indent=2)} if prev_schedule else ""
+
         Generate a detailed schedule in simple json format and nothing else.
         The schedule should be optimized and include time estimates.
+
+        NOTE:
+        If a previous schedule is provided and tasks have changed, update the schedule accordingly.
 
         Example output:
         {{
@@ -91,14 +98,17 @@ def schedule(tasks, start_time, end_time):
 
     # Get Claude's response
     response = anthropic.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model=model,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
 
-    schedule = response.content[0].text
-
-    print(schedule)
+    return {
+        "prompt": prompt,
+        "instructions_hash": hashlib.sha256(instructions.encode()).hexdigest(),
+        "timestamp": int(datetime.now().timestamp()),
+        "schedule": response.content[0].text,
+    }
 
 
 def main():
@@ -109,13 +119,30 @@ def main():
     parser.add_argument("--now", action="store_true", help="Use current time")
     parser.add_argument("--start", help="Start time for schedule command")
     parser.add_argument("--end", help="End time for schedule command")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Start with a fresh schedule, ignoring previous ones",
+    )
     args = parser.parse_args()
 
-    if args.command == "setup":
-        setup()
+    with open("instructions.md", "r") as f:
+        instructions = f.read()
+
+    client_id = os.getenv("MYDAYPLANNER_CLIENT")
+    if not client_id:
+        print("MYDAYPLANNER_CLIENT is not set")
+        return
+    client_secret = os.getenv("MYDAYPLANNER_SECRET")
+    if not client_secret:
+        print("MYDAYPLANNER_SECRET is not set")
         return
 
-    client = mtdo_client()
+    if args.command == "setup":
+        setup(client_id, client_secret)
+        return
+
+    client = mtdo_client(client_id, client_secret)
     if not client:
         print("Please run setup first")
         return
@@ -136,12 +163,58 @@ def main():
     elif args.command == "schedule":
         start_time = args.start
         end_time = args.end
+        fresh = args.fresh
         if args.now:
             start_time = datetime.now().strftime("%I:%M%p")
 
+        date = datetime.now()
+        cache_dir = user_cache_dir("mydayplanner")
+
+        prev_schedule = None
+        if not fresh:
+            schedules = [f for f in os.listdir(cache_dir) if f.startswith("schedule_")]
+            if schedules:
+                newest_file = max(
+                    schedules,
+                    key=lambda x: os.path.getctime(os.path.join(cache_dir, x)),
+                )
+                schedule_path = os.path.join(cache_dir, newest_file)
+
+                try:
+                    with open(schedule_path) as f:
+                        existing_schedule = json.load(f)
+                        if (
+                            datetime.fromtimestamp(
+                                existing_schedule["timestamp"]
+                            ).date()
+                            == date.date()
+                        ):
+                            prev_schedule = existing_schedule
+                            print(f"Loaded today's schedule from {schedule_path}")
+                except (json.JSONDecodeError, KeyError, ValueError):
+                    pass
+
         lists = client.get_lists()
+        print(f"Fetched {len(lists)} lists")
+
         tasks = fetch_tasks_from_lists(client, lists)
-        schedule(tasks, start_time, end_time)
+        print(f"Fetched {len(tasks)} tasks")
+
+        print("Scheduling...")
+        schedule_json = schedule(
+            tasks, prev_schedule, instructions, date, start_time, end_time
+        )
+
+        cache_dir = user_cache_dir("mydayplanner")
+        timestamp = int(datetime.now().timestamp())
+        output_path = os.path.join(cache_dir, f"schedule_{timestamp}.json")
+
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(output_path, "w") as f:
+            json.dump(schedule_json, f, indent=2)
+
+        print(f"Schedule saved to {output_path}")
+        print(schedule_json["schedule"])
 
 
 if __name__ == "__main__":
